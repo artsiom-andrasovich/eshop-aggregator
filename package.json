@@ -5,5 +5,14 @@
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@11.4.0"
+  "packageManager": "pnpm@11.4.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck",
+    "db:migrate": "pnpm --filter backend exec prisma migrate dev",
+    "db:studio": "pnpm --filter backend exec prisma studio"
+  }
 }
