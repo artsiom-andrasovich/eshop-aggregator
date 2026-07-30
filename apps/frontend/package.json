@@ -11,15 +11,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@eshop/shared": "workspace:*",
+    "@hookform/resolvers": "^5.5.7",
     "@tailwindcss/vite": "^4.3.3",
+    "axios": "^1.18.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "tailwindcss": "^4.3.3"
+    "react-hook-form": "^7.83.0",
+    "react-router-dom": "^7.18.2",
+    "tailwindcss": "^4.3.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
     "typescript": "~6.0.2",
