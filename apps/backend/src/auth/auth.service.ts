@@ -59,12 +59,17 @@ export class AuthService {
   }
 
   public async refreshTokens(refreshToken: string, agent: string) {
-    const { refreshToken: newRefreshToken, userId } =
-      await this.tokenService.rotate(refreshToken, agent);
+    const userId = await this.tokenService.resolveUserId(refreshToken);
     const user = await this.usersService.findById(userId);
     if (!user || user.status === 'BLOCKED') {
+      await this.tokenService.revokeToken(refreshToken);
       throw new UnauthorizedException();
     }
+
+    const { refreshToken: newRefreshToken } = await this.tokenService.rotate(
+      refreshToken,
+      agent,
+    );
     const accessToken = this.tokenService.generateAccessToken(user);
     return { accessToken, refreshToken: newRefreshToken };
   }

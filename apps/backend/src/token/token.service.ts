@@ -35,24 +35,16 @@ export class TokenService {
     return { accessToken, refreshToken };
   }
 
+  public async resolveUserId(presentedToken: string): Promise<string> {
+    const record = await this.findActiveRefreshToken(presentedToken);
+    return record.userId;
+  }
+
   public async rotate(
     presentedToken: string,
     agent: string,
   ): Promise<{ refreshToken: string; userId: string }> {
-    const record = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash: this.hashToken(presentedToken) },
-    });
-
-    if (!record) throw new UnauthorizedException();
-
-    if (record.revokedAt !== null) {
-      await this.revokeFamily(record.familyId);
-      throw new UnauthorizedException();
-    }
-
-    if (record.expiresAt < new Date()) {
-      throw new UnauthorizedException();
-    }
+    const record = await this.findActiveRefreshToken(presentedToken);
 
     const newValue = this.generateTokenValue();
     const newHash = this.hashToken(newValue);
@@ -153,6 +145,25 @@ export class TokenService {
   // SHA-256, not bcrypt: token is high-entropy and must be lookup-able by hash.
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private async findActiveRefreshToken(presentedToken: string) {
+    const record = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: this.hashToken(presentedToken) },
+    });
+
+    if (!record) throw new UnauthorizedException();
+
+    if (record.revokedAt !== null) {
+      await this.revokeFamily(record.familyId);
+      throw new UnauthorizedException();
+    }
+
+    if (record.expiresAt < new Date()) {
+      throw new UnauthorizedException();
+    }
+
+    return record;
   }
 
   private async createRefreshToken(

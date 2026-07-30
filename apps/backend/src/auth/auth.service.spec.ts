@@ -22,7 +22,14 @@ describe('AuthService', () => {
     Pick<UsersService, 'findByEmail' | 'create' | 'findById'>
   >;
   let tokenService: jest.Mocked<
-    Pick<TokenService, 'generateTokens' | 'generateAccessToken' | 'rotate'>
+    Pick<
+      TokenService,
+      | 'generateTokens'
+      | 'generateAccessToken'
+      | 'rotate'
+      | 'resolveUserId'
+      | 'revokeToken'
+    >
   >;
 
   const user: User = {
@@ -48,6 +55,8 @@ describe('AuthService', () => {
       generateTokens: jest.fn(),
       generateAccessToken: jest.fn(),
       rotate: jest.fn(),
+      resolveUserId: jest.fn(),
+      revokeToken: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -161,17 +170,34 @@ describe('AuthService', () => {
 
   describe('refreshTokens', () => {
     it('returns new access and refresh tokens', async () => {
+      tokenService.resolveUserId.mockResolvedValue('user-1');
+      usersService.findById.mockResolvedValue(user);
       tokenService.rotate.mockResolvedValue({
         refreshToken: 'new-ref',
         userId: 'user-1',
       });
-      usersService.findById.mockResolvedValue(user);
       tokenService.generateAccessToken.mockReturnValue('new-access-token');
 
       const result = await service.refreshTokens('old-ref', 'agent');
 
       expect(result.accessToken).toBe('new-access-token');
       expect(result.refreshToken).toBe('new-ref');
+      expect(tokenService.rotate).toHaveBeenCalledWith('old-ref', 'agent');
+    });
+
+    it('revokes the token and does not rotate when the user is blocked', async () => {
+      tokenService.resolveUserId.mockResolvedValue('user-1');
+      usersService.findById.mockResolvedValue({
+        ...user,
+        status: UserStatus.BLOCKED,
+      });
+
+      await expect(
+        service.refreshTokens('old-ref', 'agent'),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(tokenService.revokeToken).toHaveBeenCalledWith('old-ref');
+      expect(tokenService.rotate).not.toHaveBeenCalled();
     });
   });
 });
