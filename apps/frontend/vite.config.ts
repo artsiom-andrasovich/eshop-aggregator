@@ -7,4 +7,13 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  
+  optimizeDeps: {
+    include: ['@eshop/shared'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/@eshop\/shared/, /node_modules/],
+    },
+  },
 })
