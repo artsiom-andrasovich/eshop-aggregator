@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: eshop_aggregator
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -25,11 +25,22 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3000}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eshop_aggregator?schema=public
-      PORT: 3000
-      JWT_SECRET: change-me
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:${PORT:-3000}/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   frontend:
     build:
@@ -37,7 +48,8 @@ services:
       dockerfile: apps/frontend/Dockerfile
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "5173:80"
 

@@ -11,3 +11,4 @@ coverage/
 !.vscode/extensions.json
 .idea/
 .turbo/
+.pnpm-store/
