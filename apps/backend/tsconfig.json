@@ -16,10 +16,26 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
+    "types": ["node", "jest"],
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
-  }
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@app/common": [
+        "libs/common/src"
+      ],
+      "@app/common/*": [
+        "libs/common/src/*"
+      ],
+      "@app/*": [
+        "src/*"
+      ],
+      "@eshop/shared": [
+        "../../packages/shared/src"
+      ]
+    }
+  },
+  "include": ["src/**/*", "libs/**/*", "test/**/*"]
 }

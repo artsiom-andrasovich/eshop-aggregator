@@ -6,37 +6,55 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
-  backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec prisma generate
-      - run: pnpm run lint
-      - run: pnpm run build
-      - run: pnpm run test
+env:
+  NODE_ENV: test
+  JWT_ACCESS_SECRET: ci-test-secret-at-least-32-characters-long
+  JWT_ACCESS_TTL: 15m
+  REFRESH_TOKEN_TTL_DAYS: 7
+  CORS_ORIGIN: http://localhost:5173
+  COOKIE_SECURE: false
 
-  frontend:
+jobs:
+  build-and-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/frontend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: eshop_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eshop_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 11.4.0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint
-      - run: pnpm run build
+      - run: pnpm --filter backend exec prisma generate
+      - run: pnpm --filter backend exec prisma migrate deploy
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm --filter backend run test:e2e
+
+  docker-build:
+    runs-on: ubuntu-latest
+    env:
+      JWT_ACCESS_SECRET: ci-docker-build-secret-min-32-characters
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
